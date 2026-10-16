@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trackmate-frontend
+  labels:
+    {{- include "trackmate.labels" . | nindent 4 }}
+    app: trackmate-frontend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: trackmate-frontend
+  template:
+    metadata:
+      labels:
+        app: trackmate-frontend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            # nginx proxies /api to the backend service in-cluster.
+            - name: BACKEND_URL
+              value: "http://trackmate-backend:8000"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackmate-frontend
+  labels:
+    {{- include "trackmate.labels" . | nindent 4 }}
+    app: trackmate-frontend
+spec:
+  selector:
+    app: trackmate-frontend
+  ports:
+    - port: 80
+      targetPort: 8080

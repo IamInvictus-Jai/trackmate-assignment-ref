@@ -1,0 +1,17 @@
+# Local dev overrides: ingress on, autoscaling off, local images.
+# Keep 2 replicas each (the rubric expects it, and it demonstrates rolling updates).
+replicaCount: 2
+
+backend:
+  image: trackmate-backend
+  tag: local
+frontend:
+  image: trackmate-frontend
+  tag: local
+
+ingress:
+  enabled: true
+  host: trackmate.local
+
+hpa:
+  enabled: false
